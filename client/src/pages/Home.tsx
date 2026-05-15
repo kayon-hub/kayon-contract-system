@@ -2,14 +2,45 @@
  * Podcast 製作報價單 - Neo-Document Style
  * Design: Black-gold color scheme, A4 paper simulation, professional & minimal
  * Colors: #1A1A1A (black), #C9A84C (gold), #888888 (gray), #FFFFFF (white)
+ * 
+ * Features:
+ * - Editable fields (customer info, project name)
+ * - Auto date (today)
+ * - Product dropdown from ERP database
+ * - Auto-calculate subtotal & total
+ * - Add/remove rows
+ * - Signature pad (handwriting modal)
+ * - Print / Export PDF
  */
 
-import { useState, useCallback, useRef } from "react";
-import { Plus, Trash2, Printer, FileDown } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Plus, Trash2, Printer, FileDown, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import SignaturePad from "@/components/SignaturePad";
 
+// ===== ERP Product Database =====
+interface Product {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  price: number;
+}
+
+const PRODUCTS: Product[] = [
+  { id: "P-008", category: "Music Production", name: "Podcast 製作", description: "Podcast 製作剪輯與優化 (15min)", price: 900 },
+  { id: "P-009", category: "Music Production", name: "Podcast 製作", description: "Podcast 製作剪輯與優化 (20min)", price: 1000 },
+  { id: "P-010", category: "Music Production", name: "Podcast 製作", description: "Podcast 製作剪輯與優化 (25min)", price: 1200 },
+  { id: "P-011", category: "Music Production", name: "Podcast 製作", description: "方案A：每月4集（每集15分內，超出以10分鐘為一次，每次加收500元）", price: 3800 },
+  { id: "P-012", category: "Music Production", name: "Podcast 製作", description: "方案B：每月8集（每集15分內，超出以10分鐘為一次，每次加收500元）", price: 7500 },
+  { id: "P-003", category: "Music Production", name: "製作急件加收費用", description: "針對歌曲製作、錄音等服務之優先處理費用", price: 3000 },
+  { id: "P-004", category: "Music Production", name: "錄音室加時費", description: "錄音室租借與工程師支援，每小時計算", price: 1000 },
+];
+
+// ===== Types =====
 interface QuoteItem {
   id: string;
+  productId: string;
   name: string;
   content: string;
   unitPrice: number | string;
@@ -20,27 +51,58 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
 
+function getTodayString(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y} / ${m} / ${d}`;
+}
+
 export default function Home() {
   const documentRef = useRef<HTMLDivElement>(null);
 
-  // Editable fields state
+  // Customer info
   const [customerName, setCustomerName] = useState("");
+  const [customerContact, setCustomerContact] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [quoteDate, setQuoteDate] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [quoteDate, setQuoteDate] = useState(getTodayString());
   const [projectName, setProjectName] = useState("Podcast 節目製作");
+
+  // Signatures
+  const [customerSignature, setCustomerSignature] = useState<string | null>(null);
+  const [authorizedSignature, setAuthorizedSignature] = useState<string | null>(null);
+
+  // Signature dates (auto-fill today)
+  const [customerSignDate, setCustomerSignDate] = useState("");
+  const [authorizedSignDate, setAuthorizedSignDate] = useState("");
 
   // Quote items
   const [items, setItems] = useState<QuoteItem[]>([
-    { id: generateId(), name: "", content: "", unitPrice: "", quantity: "" },
-    { id: generateId(), name: "", content: "", unitPrice: "", quantity: "" },
-    { id: generateId(), name: "", content: "", unitPrice: "", quantity: "" },
-    { id: generateId(), name: "", content: "", unitPrice: "", quantity: "" },
+    { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
+    { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
+    { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
+    { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
   ]);
+
+  // Auto-fill sign date when signature is added
+  useEffect(() => {
+    if (customerSignature && !customerSignDate) {
+      setCustomerSignDate(getTodayString());
+    }
+  }, [customerSignature, customerSignDate]);
+
+  useEffect(() => {
+    if (authorizedSignature && !authorizedSignDate) {
+      setAuthorizedSignDate(getTodayString());
+    }
+  }, [authorizedSignature, authorizedSignDate]);
 
   const addRow = useCallback(() => {
     setItems((prev) => [
       ...prev,
-      { id: generateId(), name: "", content: "", unitPrice: "", quantity: "" },
+      { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
     ]);
   }, []);
 
@@ -60,7 +122,6 @@ export default function Home() {
         prev.map((item) => {
           if (item.id !== id) return item;
           if (field === "unitPrice" || field === "quantity") {
-            // Allow empty or numeric
             const cleaned = value.replace(/[^0-9.]/g, "");
             return { ...item, [field]: cleaned };
           }
@@ -70,6 +131,23 @@ export default function Home() {
     },
     []
   );
+
+  const selectProduct = useCallback((itemId: string, productId: string) => {
+    const product = PRODUCTS.find((p) => p.id === productId);
+    if (!product) return;
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        return {
+          ...item,
+          productId: product.id,
+          name: product.name,
+          content: product.description,
+          unitPrice: String(product.price),
+        };
+      })
+    );
+  }, []);
 
   const getSubtotal = (item: QuoteItem): number => {
     const price = typeof item.unitPrice === "string" ? parseFloat(item.unitPrice) || 0 : item.unitPrice;
@@ -89,7 +167,6 @@ export default function Home() {
   };
 
   const handleExportPDF = () => {
-    // Use print dialog as PDF export (Save as PDF option)
     toast.info("請在列印對話框中選擇「另存為 PDF」");
     setTimeout(() => {
       window.print();
@@ -153,13 +230,35 @@ export default function Home() {
                 className="font-medium text-sm"
               />
               <div className="flex items-center gap-1">
-                <span className="text-sm" style={{ color: "#1A1A1A" }}>
+                <span className="text-sm whitespace-nowrap" style={{ color: "#1A1A1A" }}>
+                  窗口：
+                </span>
+                <EditableField
+                  value={customerContact}
+                  onChange={setCustomerContact}
+                  placeholder="聯絡窗口姓名"
+                  className="text-sm flex-1"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-sm whitespace-nowrap" style={{ color: "#1A1A1A" }}>
                   聯絡電話：
                 </span>
                 <EditableField
                   value={customerPhone}
                   onChange={setCustomerPhone}
                   placeholder="請輸入電話"
+                  className="text-sm flex-1"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-sm whitespace-nowrap" style={{ color: "#1A1A1A" }}>
+                  Email：
+                </span>
+                <EditableField
+                  value={customerEmail}
+                  onChange={setCustomerEmail}
+                  placeholder="請輸入 Email"
                   className="text-sm flex-1"
                 />
               </div>
@@ -175,7 +274,7 @@ export default function Home() {
               報價資訊 &nbsp;Quotation Info
             </h3>
             <div className="flex items-center gap-1">
-              <span className="text-sm" style={{ color: "#888888" }}>
+              <span className="text-sm whitespace-nowrap" style={{ color: "#888888" }}>
                 報價日期：
               </span>
               <EditableField
@@ -215,22 +314,22 @@ export default function Home() {
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ backgroundColor: "#1A1A1A" }}>
-                <th className="text-white text-xs font-bold py-2 px-3 text-center w-[18%]">
+                <th className="text-white text-xs font-bold py-2 px-2 text-center w-[22%]">
                   項目
                 </th>
-                <th className="text-white text-xs font-bold py-2 px-3 text-center w-[32%]">
+                <th className="text-white text-xs font-bold py-2 px-2 text-center w-[30%]">
                   內容
                 </th>
-                <th className="text-white text-xs font-bold py-2 px-3 text-center w-[18%]">
+                <th className="text-white text-xs font-bold py-2 px-2 text-center w-[16%]">
                   單價 (NTD)
                 </th>
-                <th className="text-white text-xs font-bold py-2 px-3 text-center w-[12%]">
+                <th className="text-white text-xs font-bold py-2 px-2 text-center w-[10%]">
                   數量
                 </th>
-                <th className="text-white text-xs font-bold py-2 px-3 text-center w-[18%]">
+                <th className="text-white text-xs font-bold py-2 px-2 text-center w-[16%]">
                   小計 (NTD)
                 </th>
-                <th className="no-print w-[2%]"></th>
+                <th className="no-print w-[6%]"></th>
               </tr>
             </thead>
             <tbody>
@@ -239,57 +338,53 @@ export default function Home() {
                   key={item.id}
                   className="border-b border-gray-200 group hover:bg-gray-50/50 transition-colors"
                 >
-                  <td className="py-2 px-2">
-                    <input
-                      type="text"
-                      value={item.name}
-                      onChange={(e) =>
-                        updateItem(item.id, "name", e.target.value)
-                      }
-                      placeholder="—"
-                      className="w-full text-center text-sm bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
-                      style={{ color: "#1A1A1A" }}
+                  {/* 項目 - Dropdown */}
+                  <td className="py-2 px-1">
+                    <ProductSelect
+                      value={item.productId}
+                      onChange={(productId) => selectProduct(item.id, productId)}
+                      displayValue={item.name}
+                      onManualChange={(val) => updateItem(item.id, "name", val)}
                     />
                   </td>
-                  <td className="py-2 px-2">
+                  {/* 內容 */}
+                  <td className="py-2 px-1">
                     <input
                       type="text"
                       value={item.content}
-                      onChange={(e) =>
-                        updateItem(item.id, "content", e.target.value)
-                      }
+                      onChange={(e) => updateItem(item.id, "content", e.target.value)}
                       placeholder="—"
-                      className="w-full text-center text-sm bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
+                      className="w-full text-center text-xs bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
                       style={{ color: "#1A1A1A" }}
                     />
                   </td>
-                  <td className="py-2 px-2">
+                  {/* 單價 */}
+                  <td className="py-2 px-1">
                     <input
                       type="text"
                       value={item.unitPrice}
-                      onChange={(e) =>
-                        updateItem(item.id, "unitPrice", e.target.value)
-                      }
+                      onChange={(e) => updateItem(item.id, "unitPrice", e.target.value)}
                       placeholder="0"
-                      className="w-full text-center text-sm bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
+                      className="w-full text-center text-xs bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
                       style={{ color: "#1A1A1A" }}
                     />
                   </td>
-                  <td className="py-2 px-2">
+                  {/* 數量 */}
+                  <td className="py-2 px-1">
                     <input
                       type="text"
                       value={item.quantity}
-                      onChange={(e) =>
-                        updateItem(item.id, "quantity", e.target.value)
-                      }
-                      placeholder="0"
-                      className="w-full text-center text-sm bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
+                      onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
+                      placeholder="1"
+                      className="w-full text-center text-xs bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors py-1"
                       style={{ color: "#1A1A1A" }}
                     />
                   </td>
-                  <td className="py-2 px-3 text-center text-sm font-medium" style={{ color: "#1A1A1A" }}>
+                  {/* 小計 */}
+                  <td className="py-2 px-2 text-center text-xs font-medium" style={{ color: "#1A1A1A" }}>
                     {formatNumber(getSubtotal(item))}
                   </td>
+                  {/* Delete */}
                   <td className="no-print py-2 px-1">
                     <button
                       onClick={() => removeRow(item.id)}
@@ -391,28 +486,48 @@ export default function Home() {
             {/* Customer Signature */}
             <div>
               <h3
-                className="text-xs font-bold mb-4 uppercase tracking-wider"
+                className="text-xs font-bold mb-2 uppercase tracking-wider"
                 style={{ color: "#C9A84C", fontSize: "11px" }}
               >
                 客戶簽署 &nbsp;Customer Signature
               </h3>
-              <div className="space-y-4 text-sm" style={{ color: "#1A1A1A" }}>
-                <p>簽名：___________________________</p>
-                <p>日期：_______ / _______ / _______</p>
+              <SignaturePad
+                label="客戶簽署"
+                value={customerSignature}
+                onChange={setCustomerSignature}
+              />
+              <div className="mt-3 flex items-center gap-1">
+                <span className="text-sm" style={{ color: "#1A1A1A" }}>日期：</span>
+                <EditableField
+                  value={customerSignDate}
+                  onChange={setCustomerSignDate}
+                  placeholder="_______ / _______ / _______"
+                  className="text-sm"
+                />
               </div>
             </div>
 
             {/* Authorized Signature */}
             <div>
               <h3
-                className="text-xs font-bold mb-4 uppercase tracking-wider"
+                className="text-xs font-bold mb-2 uppercase tracking-wider"
                 style={{ color: "#C9A84C", fontSize: "11px" }}
               >
                 KAYON 簽署 &nbsp;Authorized Signature
               </h3>
-              <div className="space-y-4 text-sm" style={{ color: "#1A1A1A" }}>
-                <p>簽名：___________________________</p>
-                <p>日期：_______ / _______ / _______</p>
+              <SignaturePad
+                label="KAYON 簽署"
+                value={authorizedSignature}
+                onChange={setAuthorizedSignature}
+              />
+              <div className="mt-3 flex items-center gap-1">
+                <span className="text-sm" style={{ color: "#1A1A1A" }}>日期：</span>
+                <EditableField
+                  value={authorizedSignDate}
+                  onChange={setAuthorizedSignDate}
+                  placeholder="_______ / _______ / _______"
+                  className="text-sm"
+                />
               </div>
             </div>
           </div>
@@ -427,7 +542,7 @@ export default function Home() {
   );
 }
 
-/* Editable inline field component */
+/* ===== Editable inline field component ===== */
 function EditableField({
   value,
   onChange,
@@ -450,5 +565,97 @@ function EditableField({
       className={`bg-transparent border-0 border-b border-transparent focus:border-[#C9A84C] focus:outline-none transition-colors placeholder:text-gray-400 ${className}`}
       style={{ color: "#1A1A1A", ...style }}
     />
+  );
+}
+
+/* ===== Product Select Dropdown ===== */
+function ProductSelect({
+  value,
+  onChange,
+  displayValue,
+  onManualChange,
+}: {
+  value: string;
+  onChange: (productId: string) => void;
+  displayValue: string;
+  onManualChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div
+        className="flex items-center gap-0.5 cursor-pointer border-b border-transparent hover:border-[#C9A84C] transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <input
+          type="text"
+          value={displayValue}
+          onChange={(e) => onManualChange(e.target.value)}
+          placeholder="選擇品項"
+          className="w-full text-center text-xs bg-transparent border-0 focus:outline-none py-1 cursor-pointer"
+          style={{ color: "#1A1A1A" }}
+          readOnly
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+        />
+        <ChevronDown size={12} className="no-print text-gray-400 shrink-0" />
+      </div>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-40 top-full left-0 mt-1 w-[320px] bg-white border border-gray-200 rounded-md shadow-lg max-h-[240px] overflow-y-auto">
+          {PRODUCTS.map((product) => (
+            <button
+              key={product.id}
+              onClick={() => {
+                onChange(product.id);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 hover:bg-[#FFF8E1] transition-colors border-b border-gray-50 last:border-0 ${
+                value === product.id ? "bg-[#FFF8E1]" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium" style={{ color: "#1A1A1A" }}>
+                  {product.id}
+                </span>
+                <span className="text-xs font-bold" style={{ color: "#C9A84C" }}>
+                  NT${product.price.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mt-0.5 leading-snug">
+                {product.description}
+              </p>
+            </button>
+          ))}
+          {/* Manual input option */}
+          <button
+            onClick={() => {
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors text-xs text-gray-400 italic"
+          >
+            自行輸入（關閉選單）
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
