@@ -1,0 +1,35 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [],
+  "dev_command": "pnpm run dev",
+  "env_vars": {},
+  "experiments": null,
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663627035255/NmKAJfe5Murshj6B4oepQP",
+    "access_key_id": "ASIAZV3A2ECZDA3BF2WO",
+    "secret_access_key": "/xL8VWoJfSPWH9sODzouon/U3OmwvJsNWJtpVSjA",
+    "session_token": "IQoJb3JpZ2luX2VjEKr//////////wEaCXVzLWVhc3QtMSJHMEUCIQCr2jZp/+xqZqqGClz1ouMTNRovtLW/VkQRNus9rH44bAIgXmluuHLAFwIcVk/kCq8u3XDRYS0C6XP1I6Ge1dk//dEq9gMIcxAEGgw2NjUzODYwOTg4NjYiDJf1iju36NJa9u+vIyrTA9kDykYHS/wiRktFAgwZvvyaW3yOd7VFCV1P20J9tJxHm03qjjekPvvp2Jk2SuZ318s3xpdcgZxKgCTGd8kExRCmbbbyzPS119aYOqrplnsoU4Llx72moevXjReepcQ71h7jV7ApG0Gmq4BXzq/CCJ9HzlF5GPODki9+MBvM1meY2e8P06vxV+9GF2fg/0757ujND6S3Si0P2kt8KhlpuV0muVDF65b+lLQDkBi8OJgZkxQKh6nLm9r1t0cHPfcx5bGCq9nAd0vEJG15Oxfj3FB/SYNcF0Ur0Row3c5wmHvuIj8fH+5fJ8VQVOZYLRuJiSVHvKzJtvPw95lrOqibgu3w5Km3KhqMebOBrihhmJn1If3ZKJ5akG+wdePQZUq5bc5aNY61HKk7mZHkDwnGscHGJDCe4WWRGDnfqKRr8iW9wmFZGY+uhfQ9xQwmkilwTR9hBCvF/v5/0UeoS/L9CtOqPy0eTwgXaZymkjArFvalopDwTkGQ4f0fRMNZ/iTQH7XNVIzG7LIYWYVpEb9DNJ7HObTb8q9JhpBz8AGVaANALUNcrtTteuLtB9Z+dgsXCL38FmOL4RaCfeAXdGZaKw6XlqnPETOA1ykpkkA6WGjT3ra1MLXRm9AGOp0BMmrUWb3Xuy65q/qoNeonklZQ1ZyDe8pOSo07c61oWQ/+WvqEOFX5dPUTb/NBdqSuDXZn6Zn7Ig+Qscv7m1cmgnIGte6UgYRJfptnz8Niwpmuw+78KyVy6k+yt2FgbtcJ8Wv7DYuxKAfS06OdG+QYoz6i4NoyxW8Rxlf7LOaD0qHUQnrxtUzP35qK27VyzUwkovOp4RIwczXIjUPPUA==",
+    "expiration": "2026-05-15T21:34:45.000Z"
+  },
+  "name": "podcast_quote_web",
+  "path": "/home/ubuntu/podcast_quote_web",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "ToPuJRgUVWGDdEWKBNHG2w",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "UpUmuwZfKhDAMEoU93wkF7",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "HUNG KAYON",
+    "OWNER_OPEN_ID": "ENJD8XncpnZnQjVpGWnNUC",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "8aaabf41-e6c2-44ff-bb7f-d8e876bc6e06",
+    "VITE_APP_ID": "NmKAJfe5Murshj6B4oepQP",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "Podcast製作報價單",
+    "VITE_FRONTEND_FORGE_API_KEY": "YXdU8Y3beWL8nmTpMYZxok",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-static",
+  "test_command": "pnpm test"
+}
