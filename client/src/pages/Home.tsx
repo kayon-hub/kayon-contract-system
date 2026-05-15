@@ -72,11 +72,10 @@ export default function Home() {
 
   // Signatures
   const [customerSignature, setCustomerSignature] = useState<string | null>(null);
-  const [authorizedSignature, setAuthorizedSignature] = useState<string | null>(null);
 
   // Signature dates (auto-fill today)
   const [customerSignDate, setCustomerSignDate] = useState("");
-  const [authorizedSignDate, setAuthorizedSignDate] = useState("");
+  const [authorizedSignDate, setAuthorizedSignDate] = useState(getTodayString());
 
   // Quote items
   const [items, setItems] = useState<QuoteItem[]>([
@@ -86,18 +85,12 @@ export default function Home() {
     { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
   ]);
 
-  // Auto-fill sign date when signature is added
+  // Auto-fill sign date when customer signature is added
   useEffect(() => {
     if (customerSignature && !customerSignDate) {
       setCustomerSignDate(getTodayString());
     }
   }, [customerSignature, customerSignDate]);
-
-  useEffect(() => {
-    if (authorizedSignature && !authorizedSignDate) {
-      setAuthorizedSignDate(getTodayString());
-    }
-  }, [authorizedSignature, authorizedSignDate]);
 
   const addRow = useCallback(() => {
     setItems((prev) => [
@@ -105,6 +98,8 @@ export default function Home() {
       { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
     ]);
   }, []);
+
+  // Remove unused authorizedSignature state updates
 
   const removeRow = useCallback((id: string) => {
     setItems((prev) => {
@@ -496,6 +491,7 @@ export default function Home() {
                 label="客戶簽署"
                 value={customerSignature}
                 onChange={setCustomerSignature}
+                allowUpload={true}
               />
               <div className="mt-3 flex items-center gap-1">
                 <span className="text-sm" style={{ color: "#1A1A1A" }}>日期：</span>
@@ -508,7 +504,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Authorized Signature */}
+            {/* Authorized Signature - Fixed KAYON */}
             <div>
               <h3
                 className="text-xs font-bold mb-2 uppercase tracking-wider"
@@ -516,11 +512,15 @@ export default function Home() {
               >
                 KAYON 簽署 &nbsp;Authorized Signature
               </h3>
-              <SignaturePad
-                label="KAYON 簽署"
-                value={authorizedSignature}
-                onChange={setAuthorizedSignature}
-              />
+              <div className="mt-2">
+                <div className="border border-gray-200 rounded p-2 bg-white">
+                  <img
+                    src="/signature_kayon.png"
+                    alt="KAYON 簽名"
+                    className="h-14 object-contain mx-auto"
+                  />
+                </div>
+              </div>
               <div className="mt-3 flex items-center gap-1">
                 <span className="text-sm" style={{ color: "#1A1A1A" }}>日期：</span>
                 <EditableField
@@ -531,6 +531,20 @@ export default function Home() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* E-Signature Declaration */}
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+            <p className="text-xs leading-relaxed" style={{ color: "#888888" }}>
+              雙方同意以電子方式簽署本文件<br />
+              並確認本電子文件與親筆簽名文件具有同等效力<br />
+              <br />
+              簽署完成後<br />
+              本合約即視為正式成立
+            </p>
+            <p className="text-xs mt-4" style={{ color: "#C9A84C" }}>
+              🔒 256-bit SSL encryption
+            </p>
           </div>
         </div>
       </div>
