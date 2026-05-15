@@ -18,3 +18,7 @@
 - [x] Frontend: Complete signing flow (sign → PDF → archive → email → confirmation)
 - [x] Frontend: Contract notice text above signature area
 - [x] Frontend: "合約有疑慮" button with notification flow
+- [ ] 雙模式：業務填寫模式（可編輯）vs 客戶檢視模式（唯讀）
+- [ ] 業務模式：填完後點「產生客戶連結」，URL 帶 ?mode=client 參數
+- [ ] 客戶模式：所有欄位唯讀，只能簽名 + 按疑慮按鈕
+- [ ] URL 參數帶入報價單資料（JSON base64 encode）

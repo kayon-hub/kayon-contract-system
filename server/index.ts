@@ -46,7 +46,7 @@ app.post("/api/sign-contract", async (req, res) => {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "load" });
     await page.pdf({ path: tmpPdf, format: "A4", printBackground: true });
     await browser.close();
 
