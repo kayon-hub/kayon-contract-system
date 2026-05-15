@@ -14,7 +14,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Plus, Trash2, Printer, FileDown, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown, ChevronDown, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import SignaturePad from "@/components/SignaturePad";
 
@@ -72,6 +72,8 @@ export default function Home() {
 
   // Signatures
   const [customerSignature, setCustomerSignature] = useState<string | null>(null);
+  const [isSigning, setIsSigning] = useState(false);
+  const [isConcernSending, setIsConcernSending] = useState(false);
 
   // Signature dates (auto-fill today)
   const [customerSignDate, setCustomerSignDate] = useState("");
@@ -85,12 +87,58 @@ export default function Home() {
     { id: generateId(), productId: "", name: "", content: "", unitPrice: "", quantity: "1" },
   ]);
 
-  // Auto-fill sign date when customer signature is added
+  // Auto-fill sign date when customer signature is added, then trigger archive flow
   useEffect(() => {
     if (customerSignature && !customerSignDate) {
       setCustomerSignDate(getTodayString());
+      handleContractSigned();
     }
-  }, [customerSignature, customerSignDate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerSignature]);
+
+  const handleContractSigned = useCallback(async () => {
+    setIsSigning(true);
+    toast.info("合約已簽署，正在歸檔中...");
+    try {
+      const html = documentRef.current?.outerHTML || "";
+      const res = await fetch("/api/sign-contract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          html: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;}</style></head><body>${html}</body></html>`,
+          customerName,
+          customerEmail,
+          projectName,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success("合約已歸檔並寄送至雙方信箱");
+      } else {
+        toast.warning("歸檔完成（部分功能需配置 SMTP）");
+      }
+    } catch {
+      toast.warning("簽署完成（伺服器離線時歸檔功能暫停）");
+    } finally {
+      setIsSigning(false);
+    }
+  }, [customerName, customerEmail, projectName]);
+
+  const handleConcern = useCallback(async () => {
+    setIsConcernSending(true);
+    try {
+      await fetch("/api/notify-concern", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerName, customerPhone, customerEmail }),
+      });
+      toast.success("已通知窗口，將盡快與您聯絡");
+    } catch {
+      toast.error("通知發送失敗，請直接聯絡 kayon@karbonxgaiaentertainment.com");
+    } finally {
+      setIsConcernSending(false);
+    }
+  }, [customerName, customerPhone, customerEmail]);
 
   const addRow = useCallback(() => {
     setItems((prev) => [
@@ -475,6 +523,10 @@ export default function Home() {
 
         {/* Signature Section */}
         <div className="border-t border-gray-200 pt-6">
+          {/* Contract notice */}
+          <p className="text-center text-xs mb-2" style={{ color: "#888888" }}>
+            若客戶對合約金額有不清楚之處，請與負責窗口商討確認。
+          </p>
           <p className="text-center text-xs mb-5" style={{ color: "#888888" }}>
             本報價單確認即視為同意以上製作與使用條款
           </p>
@@ -545,6 +597,24 @@ export default function Home() {
             <p className="text-xs mt-4" style={{ color: "#C9A84C" }}>
               🔒 256-bit SSL encryption
             </p>
+            {/* Concern button */}
+            <div className="no-print mt-6">
+              <button
+                onClick={handleConcern}
+                disabled={isConcernSending}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs border border-gray-300 rounded text-gray-500 hover:border-[#C9A84C] hover:text-[#C9A84C] transition-colors disabled:opacity-50"
+              >
+                {isConcernSending ? <Loader2 size={13} className="animate-spin" /> : <AlertCircle size={13} />}
+                合約上有疑慮？請負責窗口與我聯絡
+              </button>
+            </div>
+            {/* Signing status */}
+            {isSigning && (
+              <div className="no-print mt-3 flex items-center justify-center gap-2 text-xs" style={{ color: "#C9A84C" }}>
+                <Loader2 size={13} className="animate-spin" />
+                正在歸檔並寄送合約...
+              </div>
+            )}
           </div>
         </div>
       </div>
